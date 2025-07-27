@@ -20,7 +20,14 @@ import {
   Music
 } from "lucide-react";
 
-export function VoiceEnhancement() {
+interface VoiceEnhancementProps {
+  file?: File | null;
+  currentTime?: number;
+  duration?: number;
+  onTimeChange?: (time: number) => void;
+}
+
+export function VoiceEnhancement({ file, currentTime = 0, duration = 0, onTimeChange }: VoiceEnhancementProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [noiseReduction, setNoiseReduction] = useState([75]);
@@ -29,7 +36,13 @@ export function VoiceEnhancement() {
   const [trebleBoost, setTrebleBoost] = useState([0]);
 
   const handleProcess = async () => {
+    if (!file) {
+      alert("Please upload an audio/video file first");
+      return;
+    }
+    
     setIsProcessing(true);
+    console.log("Enhancing audio for:", file.name);
     // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 4000));
     setIsProcessing(false);
@@ -99,14 +112,14 @@ export function VoiceEnhancement() {
             Preview
           </Button>
           
-          <Button variant="ai" onClick={handleProcess} disabled={isProcessing}>
+          <Button variant="ai" onClick={handleProcess} disabled={isProcessing || !file}>
             {isProcessing ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
               <Zap className="w-4 h-4" />
             )}
-            {isProcessing ? 'Enhancing...' : 'Enhance Audio'}
-          </Button>
+          {isProcessing ? 'Enhancing...' : file ? 'Enhance Audio' : 'Upload File First'}
+        </Button>
         </div>
       </div>
 

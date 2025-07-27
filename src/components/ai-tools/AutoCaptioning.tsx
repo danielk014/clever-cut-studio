@@ -16,18 +16,80 @@ import {
   EyeOff
 } from "lucide-react";
 
-export function AutoCaptioning() {
+interface AutoCaptioningProps {
+  file?: File | null;
+  currentTime?: number;
+  duration?: number;
+  onTimeChange?: (time: number) => void;
+}
+
+export function AutoCaptioning({ file, currentTime = 0, duration = 0, onTimeChange }: AutoCaptioningProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [captions, setCaptions] = useState<Array<{start: number, end: number, text: string}>>([]);
   const [showCaptions, setShowCaptions] = useState(true);
   const [fontSize, setFontSize] = useState([24]);
   const [opacity, setOpacity] = useState([90]);
   const [language, setLanguage] = useState("en");
   
   const handleGenerate = async () => {
+    if (!file) {
+      alert("Please upload a video file first");
+      return;
+    }
+    
     setIsGenerating(true);
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Simulate AI processing with actual file analysis
+    console.log("Generating captions for:", file.name, "Duration:", duration);
+    
+    // Simulate processing time based on file duration
+    const processingTime = Math.max(2000, duration * 100);
+    await new Promise(resolve => setTimeout(resolve, processingTime));
+    
+    // Generate sample captions based on video duration
+    const sampleCaptions = generateSampleCaptions(duration);
+    setCaptions(sampleCaptions);
+    
     setIsGenerating(false);
+    console.log("Captions generated:", sampleCaptions.length, "segments");
+  };
+
+  const generateSampleCaptions = (videoDuration: number) => {
+    const captions = [];
+    const sampleTexts = [
+      "Welcome to our video presentation.",
+      "Today we'll be discussing important topics.",
+      "Let's start with the main concepts.",
+      "This feature allows you to create amazing content.",
+      "The AI technology helps streamline your workflow.",
+      "You can customize settings to fit your needs.",
+      "Quality and performance are our top priorities.",
+      "Thank you for watching our demonstration."
+    ];
+
+    let currentTime = 0;
+    const segmentDuration = videoDuration / sampleTexts.length;
+
+    for (let i = 0; i < sampleTexts.length && currentTime < videoDuration; i++) {
+      const start = currentTime;
+      const end = Math.min(currentTime + segmentDuration, videoDuration);
+      
+      captions.push({
+        start: start,
+        end: end,
+        text: sampleTexts[i]
+      });
+      
+      currentTime += segmentDuration;
+    }
+
+    return captions;
+  };
+
+  const getCurrentCaption = () => {
+    if (!currentTime || !captions.length) return null;
+    return captions.find(caption => 
+      currentTime >= caption.start && currentTime <= caption.end
+    );
   };
 
   const captionStyles = [
@@ -61,13 +123,13 @@ export function AutoCaptioning() {
             {showCaptions ? 'Hide' : 'Show'}
           </Button>
           
-          <Button variant="ai" onClick={handleGenerate} disabled={isGenerating}>
+          <Button variant="ai" onClick={handleGenerate} disabled={isGenerating || !file}>
             {isGenerating ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
               <Wand2 className="w-4 h-4" />
             )}
-            {isGenerating ? 'Generating...' : 'Generate Captions'}
+            {isGenerating ? 'Generating...' : file ? 'Generate Captions' : 'Upload Video First'}
           </Button>
         </div>
       </div>
@@ -185,10 +247,37 @@ export function AutoCaptioning() {
         <TabsContent value="preview" className="space-y-4">
           <Card className="p-4">
             <div className="space-y-4">
-              <div className="bg-black rounded-lg p-6 min-h-[200px] flex items-end justify-center">
-                {showCaptions && (
+              <div className="bg-black rounded-lg p-6 min-h-[200px] flex items-end justify-center relative">
+                {/* Simulated video background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg" />
+                
+                {showCaptions && getCurrentCaption() && (
                   <div 
-                    className="bg-black/80 text-white px-4 py-2 rounded text-center max-w-[80%]"
+                    className="bg-black/80 text-white px-4 py-2 rounded text-center max-w-[80%] relative z-10"
+                    style={{ 
+                      fontSize: `${fontSize[0]}px`,
+                      opacity: opacity[0] / 100 
+                    }}
+                  >
+                    {getCurrentCaption()?.text}
+                  </div>
+                )}
+                
+                {showCaptions && !getCurrentCaption() && captions.length > 0 && (
+                  <div 
+                    className="bg-black/80 text-white px-4 py-2 rounded text-center max-w-[80%] relative z-10"
+                    style={{ 
+                      fontSize: `${fontSize[0]}px`,
+                      opacity: opacity[0] / 100 
+                    }}
+                  >
+                    {captions[0]?.text || "This is a sample caption that will appear in your video"}
+                  </div>
+                )}
+                
+                {showCaptions && captions.length === 0 && (
+                  <div 
+                    className="bg-black/80 text-white px-4 py-2 rounded text-center max-w-[80%] relative z-10"
                     style={{ 
                       fontSize: `${fontSize[0]}px`,
                       opacity: opacity[0] / 100 
@@ -197,24 +286,55 @@ export function AutoCaptioning() {
                     This is a sample caption that will appear in your video
                   </div>
                 )}
+                
+                {!showCaptions && (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <p className="text-sm">Captions hidden</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
                   Caption preview • {fontSize[0]}px • {opacity[0]}% opacity
+                  {captions.length > 0 && ` • ${captions.length} segments generated`}
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" disabled={captions.length === 0}>
                     <Download className="w-4 h-4" />
                     Export SRT
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" disabled={captions.length === 0}>
                     <Download className="w-4 h-4" />
                     Export VTT
                   </Button>
                 </div>
               </div>
+
+              {captions.length > 0 && (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  <h5 className="text-sm font-medium">Generated Captions:</h5>
+                  {captions.map((caption, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-secondary/50 rounded text-sm">
+                      <div className="flex-1">
+                        <span className="font-mono text-xs text-muted-foreground mr-2">
+                          {Math.floor(caption.start)}s-{Math.floor(caption.end)}s
+                        </span>
+                        <span>{caption.text}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => onTimeChange?.(caption.start)}
+                        className="ml-2"
+                      >
+                        Go to
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>

@@ -5,24 +5,20 @@ import { Slider } from "@/components/ui/slider";
 
 interface VideoPreviewProps {
   file: File | null;
+  videoUrl: string | null;
   isPlaying: boolean;
   onPlayPause: () => void;
+  onTimeUpdate: (time: number) => void;
+  onDurationChange: (duration: number) => void;
+  showCaptions?: boolean;
+  currentCaption?: string | null;
 }
 
-export function VideoPreview({ file, isPlaying, onPlayPause }: VideoPreviewProps) {
+export function VideoPreview({ file, videoUrl, isPlaying, onPlayPause, onTimeUpdate, onDurationChange, showCaptions = false, currentCaption = null }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [volume, setVolume] = useState([100]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setVideoUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [file]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -39,6 +35,7 @@ export function VideoPreview({ file, isPlaying, onPlayPause }: VideoPreviewProps
     const video = videoRef.current;
     if (video) {
       setCurrentTime(video.currentTime);
+      onTimeUpdate(video.currentTime);
     }
   };
 
@@ -46,6 +43,7 @@ export function VideoPreview({ file, isPlaying, onPlayPause }: VideoPreviewProps
     const video = videoRef.current;
     if (video) {
       setDuration(video.duration);
+      onDurationChange(video.duration);
     }
   };
 
@@ -90,20 +88,31 @@ export function VideoPreview({ file, isPlaying, onPlayPause }: VideoPreviewProps
 
         {/* Video Controls Overlay */}
         {videoUrl && (
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-            <Button
-              variant="glass"
-              size="lg"
-              onClick={onPlayPause}
-              className="w-16 h-16 rounded-full"
-            >
-              {isPlaying ? (
-                <Pause className="w-8 h-8" />
-              ) : (
-                <Play className="w-8 h-8" />
-              )}
-            </Button>
-          </div>
+          <>
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <Button
+                variant="glass"
+                size="lg"
+                onClick={onPlayPause}
+                className="w-16 h-16 rounded-full"
+              >
+                {isPlaying ? (
+                  <Pause className="w-8 h-8" />
+                ) : (
+                  <Play className="w-8 h-8" />
+                )}
+              </Button>
+            </div>
+
+            {/* Captions Overlay */}
+            {showCaptions && currentCaption && (
+              <div className="absolute bottom-4 left-4 right-4 flex justify-center">
+                <div className="bg-black/80 text-white px-4 py-2 rounded text-center max-w-[80%] text-lg">
+                  {currentCaption}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

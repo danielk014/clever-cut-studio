@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { ZoomIn, ZoomOut, Scissors, Plus } from "lucide-react";
 
@@ -7,16 +8,24 @@ interface TimelineProps {
   duration: number;
   currentTime: number;
   onTimeChange: (time: number) => void;
+  file: File | null;
 }
 
-export function Timeline({ duration, currentTime, onTimeChange }: TimelineProps) {
+export function Timeline({ duration, currentTime, onTimeChange, file }: TimelineProps) {
   const [zoom, setZoom] = useState(1);
   const [cuts, setCuts] = useState<number[]>([]);
+  const [selectedCut, setSelectedCut] = useState<number | null>(null);
 
   const handleAddCut = () => {
-    if (!cuts.includes(currentTime)) {
+    if (!cuts.includes(currentTime) && file) {
       setCuts([...cuts, currentTime].sort((a, b) => a - b));
+      console.log('Cut added at:', formatTime(currentTime));
     }
+  };
+
+  const handleRemoveCut = (cutTime: number) => {
+    setCuts(cuts.filter(cut => cut !== cutTime));
+    console.log('Cut removed at:', formatTime(cutTime));
   };
 
   const formatTime = (time: number) => {
@@ -65,7 +74,7 @@ export function Timeline({ duration, currentTime, onTimeChange }: TimelineProps)
 
           <div className="w-px h-4 bg-border mx-2" />
 
-          <Button variant="ghost" size="sm" onClick={handleAddCut} disabled={duration === 0}>
+          <Button variant="ghost" size="sm" onClick={handleAddCut} disabled={!file || duration === 0}>
             <Scissors className="w-4 h-4" />
             Cut
           </Button>
@@ -96,9 +105,14 @@ export function Timeline({ duration, currentTime, onTimeChange }: TimelineProps)
               {cuts.map((cutTime) => (
                 <div
                   key={cutTime}
-                  className="absolute top-0 bottom-0 w-px bg-destructive"
+                  className="absolute top-0 bottom-0 w-px bg-destructive cursor-pointer hover:bg-destructive/80 group"
                   style={{ left: `${(cutTime / duration) * 100}%` }}
-                />
+                  onClick={() => setSelectedCut(cutTime)}
+                >
+                  <div className="absolute -top-2 -left-2 w-5 h-5 bg-destructive rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-xs text-destructive-foreground">×</span>
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -153,11 +167,39 @@ export function Timeline({ duration, currentTime, onTimeChange }: TimelineProps)
           </div>
           
           {cuts.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              {cuts.length} cuts added
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {cuts.length} cuts added
+              </div>
+              <Button variant="destructive" size="sm" onClick={() => setCuts([])}>
+                Clear All Cuts
+              </Button>
             </div>
           )}
         </div>
+      )}
+
+      {/* Cut Management */}
+      {selectedCut !== null && (
+        <Card className="p-4 border-destructive/50 bg-destructive/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold">Cut Point at {formatTime(selectedCut)}</h4>
+              <p className="text-sm text-muted-foreground">Click to remove this cut point</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onTimeChange(selectedCut)}>
+                Go to Cut
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => {
+                handleRemoveCut(selectedCut);
+                setSelectedCut(null);
+              }}>
+                Remove Cut
+              </Button>
+            </div>
+          </div>
+        </Card>
       )}
     </div>
   );

@@ -19,7 +19,14 @@ import {
   Lasso
 } from "lucide-react";
 
-export function ContentAwareFill() {
+interface ContentAwareFillProps {
+  file?: File | null;
+  currentTime?: number;
+  duration?: number;
+  onTimeChange?: (time: number) => void;
+}
+
+export function ContentAwareFill({ file, currentTime = 0, duration = 0, onTimeChange }: ContentAwareFillProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedTool, setSelectedTool] = useState("brush");
   const [brushSize, setBrushSize] = useState([10]);
@@ -27,7 +34,13 @@ export function ContentAwareFill() {
   const [fillMethod, setFillMethod] = useState("ai-content-aware");
 
   const handleProcess = async () => {
+    if (!file) {
+      alert("Please upload a video file first");
+      return;
+    }
+    
     setIsProcessing(true);
+    console.log("Processing content fill for:", file.name);
     // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 5000));
     setIsProcessing(false);
@@ -68,13 +81,13 @@ export function ContentAwareFill() {
           </div>
         </div>
         
-        <Button variant="warning" onClick={handleProcess} disabled={isProcessing}>
+        <Button variant="warning" onClick={handleProcess} disabled={isProcessing || !file}>
           {isProcessing ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          {isProcessing ? 'Processing...' : 'Apply Fill'}
+          {isProcessing ? 'Processing...' : file ? 'Apply Fill' : 'Upload Video First'}
         </Button>
       </div>
 

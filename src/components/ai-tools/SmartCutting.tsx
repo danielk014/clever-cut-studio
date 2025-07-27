@@ -17,15 +17,28 @@ import {
   X
 } from "lucide-react";
 
-export function SmartCutting() {
+interface SmartCuttingProps {
+  file?: File | null;
+  currentTime?: number;
+  duration?: number;
+  onTimeChange?: (time: number) => void;
+}
+
+export function SmartCutting({ file, currentTime = 0, duration = 0, onTimeChange }: SmartCuttingProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sensitivity, setSensitivity] = useState([75]);
   const [autoApply, setAutoApply] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
 
   const handleAnalyze = async () => {
+    if (!file) {
+      alert("Please upload a video file first");
+      return;
+    }
+    
     setIsAnalyzing(true);
     setAnalysisComplete(false);
+    console.log("Analyzing video:", file.name, "Duration:", duration);
     // Simulate AI processing
     await new Promise(resolve => setTimeout(resolve, 4000));
     setIsAnalyzing(false);
@@ -85,13 +98,13 @@ export function SmartCutting() {
           </div>
         </div>
         
-        <Button variant="success" onClick={handleAnalyze} disabled={isAnalyzing}>
+        <Button variant="success" onClick={handleAnalyze} disabled={isAnalyzing || !file}>
           {isAnalyzing ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
           ) : (
             <Brain className="w-4 h-4" />
           )}
-          {isAnalyzing ? 'Analyzing...' : 'Analyze Video'}
+          {isAnalyzing ? 'Analyzing...' : file ? 'Analyze Video' : 'Upload Video First'}
         </Button>
       </div>
 

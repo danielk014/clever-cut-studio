@@ -24,12 +24,40 @@ export function VideoEditor() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeAITool, setActiveAITool] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type
+      const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/webm', 'audio/mp3', 'audio/wav', 'audio/m4a'];
+      if (!validTypes.some(type => file.type.startsWith(type.split('/')[0]))) {
+        alert('Please upload a valid video or audio file (MP4, AVI, MOV, WebM, MP3, WAV, M4A)');
+        return;
+      }
+      
       setSelectedFile(file);
+      // Create video URL for preview
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+      
+      // Reset states
+      setCurrentTime(0);
+      setIsPlaying(false);
+      setActiveAITool(null);
+      
+      console.log('File uploaded:', file.name, 'Type:', file.type, 'Size:', (file.size / 1024 / 1024).toFixed(2) + 'MB');
     }
+  };
+
+  const handleTimeChange = (time: number) => {
+    setCurrentTime(time);
+  };
+
+  const handleDurationChange = (newDuration: number) => {
+    setDuration(newDuration);
   };
 
   const aiTools = [
@@ -43,7 +71,7 @@ export function VideoEditor() {
     },
     {
       id: "cutting",
-      name: "Smart Cutting",
+      name: "Smart Cutting", 
       icon: Scissors,
       description: "AI detection of optimal cut points",
       gradient: "bg-gradient-success",
@@ -61,7 +89,7 @@ export function VideoEditor() {
       id: "voice",
       name: "Voice Enhancement",
       icon: Volume2,
-      description: "AI audio cleanup and optimization",
+      description: "AI audio cleanup and optimization", 
       gradient: "bg-gradient-ai",
       component: VoiceEnhancement
     }
@@ -167,9 +195,12 @@ export function VideoEditor() {
             {/* Video Preview */}
             <Card className="flex-1 p-6 border-border/50 bg-card/80 backdrop-blur-sm">
               <VideoPreview 
-                file={selectedFile} 
+                file={selectedFile}
+                videoUrl={videoUrl}
                 isPlaying={isPlaying} 
                 onPlayPause={() => setIsPlaying(!isPlaying)}
+                onTimeUpdate={handleTimeChange}
+                onDurationChange={handleDurationChange}
               />
             </Card>
 
@@ -179,7 +210,12 @@ export function VideoEditor() {
                 <Tabs value={activeAITool} className="w-full">
                   {aiTools.map((tool) => (
                     <TabsContent key={tool.id} value={tool.id}>
-                      <tool.component />
+                      <tool.component 
+                        file={selectedFile}
+                        currentTime={currentTime}
+                        duration={duration}
+                        onTimeChange={handleTimeChange}
+                      />
                     </TabsContent>
                   ))}
                 </Tabs>
@@ -189,9 +225,10 @@ export function VideoEditor() {
             {/* Timeline */}
             <Card className="p-4 border-border/50 bg-card/80 backdrop-blur-sm">
               <Timeline 
-                duration={selectedFile ? 60 : 0} 
-                currentTime={0}
-                onTimeChange={() => {}}
+                duration={duration} 
+                currentTime={currentTime}
+                onTimeChange={handleTimeChange}
+                file={selectedFile}
               />
             </Card>
           </div>
